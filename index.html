@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>متجر التطبيقات الاحترافي</title>
+    <!-- مكتبة تلغرام الرسمية لتطبيقات الويب -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #38bdf8;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger-color: #ef4444;
+            --success-color: #22c55e;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            direction: rtl;
+        }
+
+        /* الهيدر والأزرار الرئيسية */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #334155;
+        }
+
+        h1 { font-size: 1.2rem; margin: 0; color: var(--accent-color); }
+
+        .btn-settings {
+            background: var(--card-bg);
+            color: var(--text-color);
+            border: 1px solid #334155;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* أقسام المتجر */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+        }
+
+        .tab-btn {
+            background: var(--card-bg);
+            color: var(--text-muted);
+            border: none;
+            padding: 10px 16px;
+            border-radius: 20px;
+            white-space: nowrap;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-color);
+            color: #000;
+        }
+
+        /* شبكة التطبيقات */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+        }
+
+        .app-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #334155;
+        }
+
+        .app-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            object-fit: cover;
+            margin-bottom: 8px;
+        }
+
+        .app-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 4px; }
+        .app-category { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px; }
+
+        .download-btn {
+            background: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            width: 100%;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        /* النافذة المنبثقة (الإعدادات والنشر) */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 20px;
+            max-width: 400px;
+            margin: 20px auto;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: right;
+        }
+
+        .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; }
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #fff;
+            box-sizing: border-box;
+        }
+
+        .admin-panel {
+            background: #0284c722;
+            border: 1px dashed var(--accent-color);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .stats-box {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            background: var(--card-bg);
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+            margin: 0 4px;
+        }
+
+        .close-btn {
+            background: var(--danger-color);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            width: 100%;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- الهيدر -->
+    <header>
+        <h1>🛍️ متجر التطبيقات</h1>
+        <button class="btn-settings" onclick="openModal()">⚙️ الإعدادات</button>
+    </header>
+
+    <!-- أزرار الأقسام -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="filterApps('all', this)">الكل</button>
+        <button class="tab-btn" onclick="filterApps('games', this)">🎮 الألعاب</button>
+        <button class="tab-btn" onclick="filterApps('apps', this)">📱 التطبيقات</button>
+        <button class="tab-btn" onclick="filterApps('pro', this)">🔥 تطبيقات أصلية واحترافية</button>
+    </div>
+
+    <!-- شبكة عرض التطبيقات -->
+    <div class="app-grid" id="appGrid">
+        <!-- يتم تحميل التطبيقات هنا عبر JavaScript -->
+    </div>
+
+    <!-- نافذة الإعدادات والنشر -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <h2>⚙️ إعدادات المتجر</h2>
+
+            <!-- لوحة الأدمن (تظهر للأدمن فقط) -->
+            <div class="admin-panel" id="adminPanel" style="display: none;">
+                <h3>👑 لوحة تحكم الأدمن</h3>
+                <div class="stats-box">
+                    <div class="stat-item">
+                        <div id="statGames">0</div>
+                        <small>ألعاب</small>
+                    </div>
+                    <div class="stat-item">
+                        <div id="statApps">0</div>
+                        <small>تطبيقات</small>
+                    </div>
+                    <div class="stat-item">
+                        <div id="statDevs">0</div>
+                        <small>مطورين</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- زر إنشاء حساب مطور -->
+            <div style="margin-bottom: 20px;">
+                <h3>👨‍💻 حساب مطور (New Account)</h3>
+                <form id="devForm" onsubmit="registerDev(event)">
+                    <div class="form-group">
+                        <label>الاسم الكامل:</label>
+                        <input type="text" id="devName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>العمر:</label>
+                        <input type="number" id="devAge" required>
+                    </div>
+                    <div class="form-group">
+                        <label>الجنس:</label>
+                        <select id="devGender" required>
+                            <option value="شب">شب</option>
+                            <option value="بنت">بنت</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="download-btn">إنشاء حساب مطور</button>
+                </form>
+            </div>
+
+            <hr style="border-color: #334155;">
+
+            <!-- نموذج نشر تطبيق / لعبة -->
+            <div>
+                <h3>🚀 نشر تطبيق أو لعبة</h3>
+                <form id="publishForm" onsubmit="publishApp(event)">
+                    <div class="form-group">
+                        <label>اسم التطبيق/اللعبة:</label>
+                        <input type="text" id="appName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>القسم:</label>
+                        <select id="appCategory" required>
+                            <option value="games">🎮 ألعاب</option>
+                            <option value="apps">📱 تطبيقات</option>
+                            <option value="pro">🔥 تطبيقات أصلية واحترافية</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>رابط الصورة (Icon):</label>
+                        <input type="url" id="appIcon" placeholder="https://..." required>
+                    </div>
+                    <div class="form-group">
+                        <label>رابط التحميل:</label>
+                        <input type="url" id="appLink" placeholder="https://..." required>
+                    </div>
+                    <button type="submit" class="download-btn" style="background: var(--success-color); color: #fff;">نشر الآن</button>
+                </form>
+            </div>
+
+            <button class="close-btn" onclick="closeModal()">إغلاق</button>
+        </div>
+    </div>
+
+    <script>
+        // --- إعدادات الأدمن والبوت ---
+        const ADMIN_TELEGRAM_ID =7357174238 "ضع_رقم_ID_الخاص_بك_هنا"; 
+        const BOT_TOKEN =8657973441:AAG_IY07gyimWnHRjtBnJbsWQkBFKQrxCFg "ضع_توكن_البوت_خاصتك_هنا";
+
+        // تهيئة التلغرام
+        const tg = window.Telegram?.WebApp;
+        if (tg) tg.expand();
+
+        const currentUser = tg?.initDataUnsafe?.user;
+        let isDev = localStorage.getItem('isDev') === 'true';
+
+        // بيانات تجريبية (تخزين محلي لحين ربط Firebase)
+        let apps = JSON.parse(localStorage.getItem('store_apps')) || [];
+        let devAccountsCount = localStorage.getItem('devAccountsCount') || 0;
+
+        // التحقق من صلاحيات الأدمن
+        function checkAdmin() {
+            if (currentUser && String(currentUser.id) === String(ADMIN_TELEGRAM_ID)) {
+                document.getElementById('adminPanel').style.display = 'block';
+                updateStats();
+                return true;
+            }
+            return false;
+        }
+
+        // تحديث إحصائيات الأدمن
+        function updateStats() {
+            const gamesCount = apps.filter(a => a.category === 'games').length;
+            const appsCount = apps.filter(a => a.category === 'apps' || a.category === 'pro').length;
+            
+            document.getElementById('statGames').innerText = gamesCount;
+            document.getElementById('statApps').innerText = appsCount;
+            document.getElementById('statDevs').innerText = devAccountsCount;
+        }
+
+        // تسجيل حساب مطور جديد
+        function registerDev(e) {
+            e.preventDefault();
+            const name = document.getElementById('devName').value;
+            const age = document.getElementById('devAge').value;
+            const gender = document.getElementById('devGender').value;
+
+            // إرسال البيانات فوراً للادمن عبر بوت تلغرام
+            const message = `🔔 *طلب حساب مطور جديد*\n\n👤 *الاسم:* ${name}\n🎂 *العمر:* ${age}\n👤 *الجنس:* ${gender}\n🆔 *Telegram ID:* ${currentUser?.id || 'غير معروف'}`;
+            
+            fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: ADMIN_TELEGRAM_ID,
+                    text: message,
+                    parse_mode: 'Markdown'
+                })
+            });
+
+            localStorage.setItem('isDev', 'true');
+            isDev = true;
+            devAccountsCount++;
+            localStorage.setItem('devAccountsCount', devAccountsCount);
+
+            alert("تم إنشاء حساب المطور وإرسال البيانات للأدمن بنجاح! يمكنك الآن نشر التطبيقات.");
+            document.getElementById('devForm').reset();
+        }
+
+        // نشر تطبيق أو لعبة
+        function publishApp(e) {
+            e.preventDefault();
+            const isAdmin = checkAdmin();
+
+            // الشروط: يجب أن يكون مطوراً أو الأدمن نفسه
+            if (!isDev && !isAdmin) {
+                alert("❌ لا يمكنك نشر تطبيق قبل إتمام الشروط وإنشاء حساب مطور أولاً (New Account)!");
+                return;
+            }
+
+            const newApp = {
+                id: Date.now(),
+                name: document.getElementById('appName').value,
+                category: document.getElementById('appCategory').value,
+                icon: document.getElementById('appIcon').value,
+                link: document.getElementById('appLink').value
+            };
+
+            apps.push(newApp);
+            localStorage.setItem('store_apps', JSON.stringify(apps));
+
+            alert("✅ تم نشر التطبيق بنجاح في المتجر!");
+            document.getElementById('publishForm').reset();
+            closeModal();
+            renderApps('all');
+        }
+
+        // عرض التطبيقات في الواجهة
+        function renderApps(category = 'all') {
+            const grid = document.getElementById('appGrid');
+            grid.innerHTML = '';
+
+            const filtered = category === 'all' ? apps : apps.filter(a => a.category === category);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<p style="text-align:center; grid-column: 1/-1; color: var(--text-muted);">لا يوجد تطبيقات في هذا القسم حالياً.</p>';
+                return;
+            }
+
+            filtered.forEach(app => {
+                grid.innerHTML += `
+                    <div class="app-card">
+                        <img src="${app.icon}" class="app-icon" onerror="this.src='https://via.placeholder.com/60'">
+                        <div class="app-title">${app.name}</div>
+                        <div class="app-category">${getCategoryName(app.category)}</div>
+                        <button class="download-btn" onclick="window.open('${app.link}', '_blank')">تحميل</button>
+                    </div>
+                `;
+            });
+        }
+
+        function getCategoryName(cat) {
+            if (cat === 'games') return '🎮 لعبة';
+            if (cat === 'apps') return '📱 تطبيق';
+            if (cat === 'pro') return '🔥 احترافي';
+            return '';
+        }
+
+        function filterApps(cat, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderApps(cat);
+        }
+
+        function openModal() {
+            document.getElementById('settingsModal').style.style.display = 'block';
+            checkAdmin();
+        }
+
+        function closeModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        // التشغيل المبدئي
+        renderApps('all');
+    </script>
+</body>
+</html>
